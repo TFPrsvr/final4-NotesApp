@@ -1,0 +1,92 @@
+#regComp {
+    background-color: #2a2a2a;
+    padding: 40px;
+    border-radius: 10px;
+    width: 300px;
+    margin: 100px auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); 
+    text-align: center;
+  }
+  
+  #regComp h2 {
+    color: #00c9ff;
+    margin-bottom: 20px;
+  }
+  
+  #regComp p {
+    color: #ff3b3b;     font-size: 14px;
+  }
+  
+  #regComp input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 2px solid #555;
+    border-radius: 5px;
+    background-color: #333;
+    color: #fff;
+    font-size: 16px;
+  }
+  
+  #regComp input:focus {
+    outline: none;
+    border-color: #00c9ff; 
+  }
+  
+  #regComp button {
+    background-color: #0077a3; 
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    width: 100%;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  #regComp button:hover {
+    background-color: #00c9ff; 
+  }
+  
+  #regComp .register-container {
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  #regComp .register-button {
+    background-color: #0077a3;
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  #regComp .register-button:hover {
+    background-color: #00c9ff;
+  }
+  
+  #regComp .register-container p {
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  
+  /* Responsive design for smaller screens */
+  @media (max-width: 480px) {
+    #regComp {
+      width: 90%;
+      padding: 20px;
+    }
+  
+    #regComp input {
+      font-size: 14px;
+    }
+  
+    #regComp button {
+      font-size: 14px;
+    }
+  }
+  

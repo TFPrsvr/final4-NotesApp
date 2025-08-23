@@ -1,0 +1,104 @@
+/* General Form Styling */
+#formComp {
+    background-color: #2a2a2a;  /* Dark background for form */
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 750px;
+    margin: 0 auto;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+  }
+  
+#notesData{
+  background-color: #2a2a2a;
+  color: #f0f0f0;
+  /* font-size: 2rem; */
+}
+
+  h1 {
+    color: #00c9ff;
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Title Input Field */
+  #formTitle {
+    width: 100%;
+    padding: 10px;
+    background-color: #3b3b3b;
+    color: #00c9ff;
+    border: 1px solid #555;
+    border-radius: 5px;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  #formTitle::placeholder {
+    color: #bbb;
+  }
+  
+
+  
+  /* Content Textarea */
+  #formContent {
+    width: 100%;
+    padding: 10px;
+    background-color: #3b3b3b;
+    color: #00c9ff;
+    border: 1px solid #555;
+    border-radius: 5px;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    height: 150px;
+  }
+  
+  #formContent::placeholder {
+    color: #bbb;
+  }
+  
+
+  
+  #submitBtn {
+    background-color: #00c9ff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  #submitBtn:hover {
+    background-color: #008cc9;
+  }
+  
+  #submitBtn:active {
+    background-color: #0077a3;
+  }
+  
+  br {
+    margin-bottom: 1rem;
+  }
+  
+  @media (max-width: 600px) {
+    #formComp {
+      padding: 15px;
+    }
+  
+    h1 {
+      font-size: 1.40rem;
+    }
+  
+    .formTitle,
+    .formContent {
+      font-size: 0.9rem;
+      padding: 8px;
+    }
+  
+    #submitBtn {
+      font-size: 0.9rem;
+      padding: 8px 15px;
+    }
+  }
+  

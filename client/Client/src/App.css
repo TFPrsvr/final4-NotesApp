@@ -1,0 +1,157 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Arial', sans-serif;
+}
+
+body {
+  background-color: #1a1a1a; 
+  color: #f4f4f9; 
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+#appComp {
+  text-align: center;
+  width: 100%;
+  max-width: 800px;
+}
+
+h1 {
+  color: #00c9ff; 
+  margin-bottom: 20px;
+}
+
+#formComp {
+  background-color: #262626;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  margin-bottom: 30px;
+}
+
+#notesData {
+  margin-bottom: 20px;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  background-color: #333333;
+  color: #f4f4f9;
+  border: 2px solid #444;
+  border-radius: 8px;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+textarea:focus {
+  border-color: #00c9ff; 
+  outline: none;
+}
+
+button {
+  background-color: #00c9ff;
+  color: #1a1a1a;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  width: 100%;
+}
+
+button:hover {
+  background-color: #0098cc;
+}
+
+button:disabled {
+  background-color: #444;
+  cursor: not-allowed;
+}
+
+#notesList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.note-card {
+  background-color: #333333;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+}
+
+.note-card:hover {
+  background-color: #444444;
+}
+
+.note-card h3 {
+  color: #00c9ff; 
+
+.note-card p {
+  color: #f4f4f9;
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  #appComp {
+    padding: 10px;
+  }
+
+  #formComp {
+    padding: 15px;
+  }
+
+  button {
+    width: 100%;
+    padding: 12px;
+  }
+
+  textarea {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 10px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  button {
+    padding: 10px;
+  }
+}
+
+
+
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+}
