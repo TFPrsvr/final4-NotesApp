@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../components/ui/toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { AnimatedText } from "../../components/magicui/animated-text";
@@ -10,45 +12,38 @@ import { Shimmer } from "../../components/magicui/shimmer";
 import { FileTextIcon, ExitIcon, PersonIcon } from "@radix-ui/react-icons";
 
 const Dashboard = () => {
-  const [user, setUser] = useState(null);
   const nav = useNavigate();
+  const { logout } = useAuth();
+  const { user, loading: userLoading, isAuthenticated } = useUser();
+  const { toast } = useToast();
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    axios
-      .get('http://localhost:3002/api/getUser', { withCredentials: true })
-      .then((res) => {
-        console.log('User data fetched: ', res.data);
-        setUser(res.data);
-      })
-      .catch((err) => {
-        console.error('Error fetching user data: ', err.response ? err.response.data : err.message);
-        nav('/login'); 
-      });
-  }, [nav]);
+    if (!isAuthenticated && !userLoading) {
+      toast.warning('Please log in to access your dashboard');
+      nav('/login2');
+    }
+  }, [isAuthenticated, userLoading, nav, toast]);
 
-  if (!user) {
+  if (userLoading || !user) {
     return (
       <FloatingElements className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
         <div className="text-center">
           <Shimmer>
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse"></div>
           </Shimmer>
-          <p className="text-lg text-slate-600 dark:text-slate-400">Loading your dashboard...</p>
+          <p className="text-lg text-slate-600 dark:text-slate-400">
+            {userLoading ? 'Loading your dashboard...' : 'Redirecting to login...'}
+          </p>
         </div>
       </FloatingElements>
     );
   }
 
-  const handleLogOut = () => {
-    axios.post('http://localhost:3002/api/logout', {}, { withCredentials: true })
-      .then(() => {
-        setUser(null);
-        nav('/login');
-      })
-      .catch(() => {
-        setUser(null);
-        nav('/login');
-      });
+  const handleLogOut = async () => {
+    toast.info('Signing you out...');
+    await logout();
+    toast.success('Successfully signed out');
   }
 
   return (
