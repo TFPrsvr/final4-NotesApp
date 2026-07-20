@@ -1,73 +1,68 @@
-import React from 'react'
-import { Link, useNavigate } from "react-router-dom"
-import './Nav.css'
-import Or from '../Or/Or'
-
-
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useUser } from '../../context/UserContext';
+import './Nav.css';
 
 const Nav = () => {
-  const token = document.cookie.includes('authToken')
-  const nav = useNavigate()
+  const nav = useNavigate();
+  const { isAuthenticated, logoutUser } = useUser();
 
-
-    const handleLogout = () => {
-
-      axios({
-        method: 'get',
-        url: "http://localhost:3002/api/users/logout",
-      })
-      .then(res => {
-        document.cookie = 'authToken=; Max-Age=0'
-        nav('/login')
+  const handleLogout = () => {
+    axios({
+      method: 'get',
+      url: `${import.meta.env.VITE_API_URL}/api/users/logout`,
+      withCredentials: true
+    })
+      .then(() => {
+        logoutUser();
+        nav('/login2');
       })
       .catch(error => {
-        console.log('Logout Failed', error)
-      })
-    }
-
-
-
-
-
+        console.error('Logout failed:', error.message);
+        logoutUser();
+        nav('/login2');
+      });
+  };
 
   return (
-     <nav>
+    <nav aria-label="Main navigation">
+      {isAuthenticated ? (
+        <ul className="nav-list" role="list">
+          <li>
+            <Link to="/notes" aria-label="Go to create note page">Notes</Link>
+          </li>
+          <li>
+            <Link to="/get" aria-label="Go to your notes">My Notes</Link>
+          </li>
+          <li>
+            <Link to="/dash" aria-label="Go to dashboard">Dashboard</Link>
+          </li>
+          <li>
+            <Link to="/settings" aria-label="Go to settings">Settings</Link>
+          </li>
+          <li>
+            <button
+              onClick={handleLogout}
+              aria-label="Log out of your account"
+              className="nav-logout-btn"
+            >
+              Logout
+            </button>
+          </li>
+        </ul>
+      ) : (
+        <ul className="nav-list" role="list">
+          <li>
+            <Link to="/login2" aria-label="Go to login page">Login</Link>
+          </li>
+          <li>
+            <Link to="/reg" aria-label="Go to register page">Register</Link>
+          </li>
+        </ul>
+      )}
+    </nav>
+  );
+};
 
-{token ? (
-  <>
-  
-  <Link to='/notes'>Notes</Link>
-  
-  <button onClick={handleLogout}>Logout</button>
-  
-  </>
-) : (
-
-  <>
-  <div className='Continer'>
-
-<br />
-<br />
-<br />
-  {/* <Link to='/login'>Login </Link> */}
-  <Link to='/login2'>Login </Link>
-
-<br />
-<br />
-
-  <Link to='/reg'>Register</Link>
-  
-  <br />
-  <br />
-  <br />
-  <Or />
-  </div>
-  </>
-)}
-
-</nav> 
-
-  )
-}
-
-export default Nav
+export default Nav;

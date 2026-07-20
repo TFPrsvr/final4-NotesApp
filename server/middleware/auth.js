@@ -1,17 +1,14 @@
-const express = require('express')
-const bcrypt = require('bcrypt')
-const JWT = require("jsonwebtoken")
-const cookieParser = require('cookie-parser')
-const User = require('../models/User.models')
-const UserController = require('../controllers/User.controller')
-const NotesController = require('../controllers/Notes.controllers')
-const Notes = require('../models/Notes.models')
+const JWT = require('jsonwebtoken');
 
 const Auth = (req, res, next) => {
+  let token = req.cookies && req.cookies.jwt;
 
-  const token = req.cookies.jwt;
-
-  console.log('Token received from cookies:', token);
+  if (!token) {
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
 
   if (!token) {
     return res.status(401).json({ msg: 'No token, authorization not allowed' });
@@ -22,11 +19,9 @@ const Auth = (req, res, next) => {
       console.error('Token verification failed:', err.message);
       return res.status(401).json({ msg: 'Invalid token' });
     }
-
-    console.log('Token decoded:', decoded);
-    req.user = decoded; 
-    next(); 
+    req.user = decoded;
+    next();
   });
-}
+};
 
-module.exports = Auth
+module.exports = Auth;

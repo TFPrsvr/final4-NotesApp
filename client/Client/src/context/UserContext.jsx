@@ -11,77 +11,82 @@ export const useUser = () => {
   return context;
 };
 
+const DEFAULT_PREFERENCES = {
+  defaultNoteColor: '#ffd54f',
+  font: 'Arial',
+  layout: 'grid'
+};
+
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
 
-  // Check for existing session on app load
   useEffect(() => {
     checkAuthStatus();
   }, []);
 
-  const checkAuthStatus = async () => {
-    try {
-      setLoading(true);
-      
-      // Check for stored token
-      const token = localStorage.getItem('userToken');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+  const checkAuthStatus = () => {
+    const token = localStorage.getItem('userToken');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
-      // Verify token with server and get user data
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/api/getUser`,
-        { 
-          withCredentials: true,
-          headers: {
-            'Authorization': `Bearer ${token}`
+    setLoading(true);
+
+    axios({
+      method: 'get',
+      url: `${import.meta.env.VITE_API_URL}/api/getUser`,
+      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(response => {
+        if (response.data) {
+          setUser(response.data);
+          setIsAuthenticated(true);
+          if (response.data.preferences) {
+            setPreferences(response.data.preferences);
           }
         }
-      );
-
-      if (response.data) {
-        setUser(response.data);
-        setIsAuthenticated(true);
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      // Clear invalid token
-      localStorage.removeItem('userToken');
-      localStorage.removeItem('userId');
-      document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
+        setLoading(false);
+      })
+      .catch(() => {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userId');
+        document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        setUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+      });
   };
 
   const loginUser = (userData, token) => {
     setUser(userData);
     setIsAuthenticated(true);
-    
-    // Store in localStorage
+
+    if (userData.preferences) {
+      setPreferences(userData.preferences);
+    }
+
     localStorage.setItem('userToken', token);
-    localStorage.setItem('userId', userData.userId || userData._id);
-    
-    // Store user data for quick access
+    localStorage.setItem('userId', userData._id || userData.userId);
     localStorage.setItem('userData', JSON.stringify({
       username: userData.username,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      userId: userData.userId || userData._id
+      first: userData.first,
+      last: userData.last,
+      _id: userData._id || userData.userId
     }));
   };
 
   const logoutUser = () => {
     setUser(null);
     setIsAuthenticated(false);
-    
-    // Clear all stored data
+    setPreferences(DEFAULT_PREFERENCES);
+
     localStorage.removeItem('userToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('userData');
@@ -90,45 +95,46 @@ export const UserProvider = ({ children }) => {
   };
 
   const updateUser = (updatedUserData) => {
-    setUser(prevUser => ({
-      ...prevUser,
-      ...updatedUserData
-    }));
-    
-    // Update stored user data
+    setUser(prevUser => ({ ...prevUser, ...updatedUserData }));
+
     const currentData = JSON.parse(localStorage.getItem('userData') || '{}');
-    localStorage.setItem('userData', JSON.stringify({
-      ...currentData,
-      ...updatedUserData
-    }));
+    localStorage.setItem('userData', JSON.stringify({ ...currentData, ...updatedUserData }));
   };
 
-  // Auto-login from stored data if available and user wants to be remembered
-  useEffect(() => {
-    const rememberMe = localStorage.getItem('rememberMe') === 'true';
-    const storedUserData = localStorage.getItem('userData');
+  const updatePreferences = (newPrefs) => {
     const token = localStorage.getItem('userToken');
-    
-    if (rememberMe && storedUserData && token && !user) {
-      try {
-        const userData = JSON.parse(storedUserData);
-        setUser(userData);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Failed to restore user session:', error);
-        logoutUser();
+
+    return axios({
+      method: 'put',
+      url: `${import.meta.env.VITE_API_URL}/api/users/preferences`,
+      data: newPrefs,
+      withCredentials: true,
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    }
-    setLoading(false);
-  }, []);
+    })
+      .then(response => {
+        if (response.data && response.data.user && response.data.user.preferences) {
+          setPreferences(response.data.user.preferences);
+          setUser(prev => ({ ...prev, preferences: response.data.user.preferences }));
+        }
+        return response;
+      })
+      .catch(err => {
+        console.error('Error updating preferences:', err.message);
+        throw err;
+      });
+  };
 
   const value = {
     user,
     loading,
     isAuthenticated,
+    preferences,
     loginUser,
     logoutUser,
     updateUser,
+    updatePreferences,
     checkAuthStatus
   };
 

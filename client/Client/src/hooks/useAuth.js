@@ -9,72 +9,67 @@ export const useAuth = () => {
   const navigate = useNavigate();
   const { loginUser, logoutUser, isAuthenticated } = useUser();
 
-  const login = async (credentials, rememberMe = false) => {
+  const login = (credentials, rememberMe = false) => {
     setLoading(true);
     setError(null);
 
-    try {
-      const response = await axios({
-        method: 'post',
-        url: `${process.env.REACT_APP_API_URL}/api/users/loginUser`,
-        data: credentials,
-        withCredentials: true,
+    return axios({
+      method: 'post',
+      url: `${import.meta.env.VITE_API_URL}/api/users/loginUser`,
+      data: credentials,
+      withCredentials: true
+    })
+      .then(response => {
+        const { token, user } = response.data;
+
+        document.cookie = `jwt=${token}; path=/`;
+        localStorage.setItem('rememberMe', rememberMe.toString());
+
+        loginUser(user, token);
+
+        setLoading(false);
+        return { success: true, data: response.data };
+      })
+      .catch(err => {
+        setLoading(false);
+
+        let errorMessage = 'Login failed. Please try again.';
+
+        if (err.response?.data?.msg === 'Token has expired, please log in again') {
+          errorMessage = 'Session expired. Please log in again.';
+        } else if (err.response?.data?.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response?.data?.msg) {
+          errorMessage = err.response.data.msg;
+        } else if (err.response?.status === 401) {
+          errorMessage = 'Invalid username or password.';
+        } else if (err.response?.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
       });
-
-      const { token, userId, username, firstName, lastName } = response.data;
-
-      // Store token in cookie for server requests
-      document.cookie = `jwt=${token}; path=/`;
-      
-      // Store remember me preference
-      localStorage.setItem('rememberMe', rememberMe.toString());
-      
-      // Use user context to manage user state
-      loginUser({
-        userId,
-        username,
-        firstName,
-        lastName
-      }, token);
-
-      setLoading(false);
-      return { success: true, data: response.data };
-    } catch (err) {
-      setLoading(false);
-      
-      let errorMessage = 'Login failed. Please try again.';
-      
-      if (err.response?.data?.msg === 'Token has expired, please log in again') {
-        errorMessage = 'Session expired. Please log in again.';
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.response?.status === 401) {
-        errorMessage = 'Invalid username or password.';
-      } else if (err.response?.status >= 500) {
-        errorMessage = 'Server error. Please try again later.';
-      }
-      
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    }
   };
 
-  const logout = async () => {
+  const logout = () => {
     setLoading(true);
-    
-    try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/logout`, {}, { 
-        withCredentials: true 
-      });
-    } catch (err) {
-      console.warn('Logout request failed:', err);
-    }
 
-    // Use user context to clear user state
-    logoutUser();
-    
-    setLoading(false);
-    navigate('/login2');
+    axios({
+      method: 'get',
+      url: `${import.meta.env.VITE_API_URL}/api/users/logout`,
+      withCredentials: true
+    })
+      .then(() => {
+        logoutUser();
+        setLoading(false);
+        navigate('/login2');
+      })
+      .catch(() => {
+        logoutUser();
+        setLoading(false);
+        navigate('/login2');
+      });
   };
 
   const checkAuthenticated = () => {

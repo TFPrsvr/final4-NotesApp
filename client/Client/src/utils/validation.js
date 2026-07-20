@@ -66,6 +66,10 @@ export const registerValidation = {
     validationRules.minLength(2, 'Last name must be at least 2 characters'),
     validationRules.maxLength(50, 'Last name must be no more than 50 characters')
   ],
+  email: [
+    validationRules.required('Email is required'),
+    validationRules.email()
+  ],
   username: [
     validationRules.required('Username is required'),
     validationRules.username()

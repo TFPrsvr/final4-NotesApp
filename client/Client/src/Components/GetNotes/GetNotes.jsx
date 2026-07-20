@@ -1,350 +1,348 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Link, useNavigate } from "react-router-dom"
-import { v4 as uuidv4 } from "uuid";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import "../GetNotes/GetNotes.css";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { Button } from '../../components/ui/button';
+import { FloatingElements } from '../../components/magicui/floating-elements';
+import { GradientText } from '../../components/magicui/gradient-text';
+import { AnimatedText } from '../../components/magicui/animated-text';
+import { useUser } from '../../context/UserContext';
+import '../GetNotes/GetNotes.css';
 
-
-const GetNotes = ({
-  title,
-  setTitle,
-  notes,
-  setNotes,
-  content,
-  setContent,
-  newNote,
-}) => {
+const GetNotes = () => {
   const [allNotes, setAllNotes] = useState([]);
   const [error, setError] = useState(null);
-
   const [editingNote, setEditingNote] = useState(null);
-  const [updatedData, setUpdatedData] = useState({ title: "", content: "" });
+  const [updatedData, setUpdatedData] = useState({ title: '', content: '' });
+  const [loadingNotes, setLoadingNotes] = useState(true);
+  const nav = useNavigate();
+  const { preferences } = useUser();
 
+  const layout = preferences?.layout || 'list';
+  const font = preferences?.font || 'Arial';
+  const isGrid = layout === 'grid';
 
+  const getToken = () => localStorage.getItem('userToken');
 
+  const sortNotes = (notes) => {
+    const pinned = notes.filter(n => n.pinned);
+    const unpinned = notes.filter(n => !n.pinned);
+    return [...pinned, ...unpinned];
+  };
 
-  const handleFetchNotes = () => {
+  const fetchNotes = () => {
+    const token = getToken();
+    if (!token) {
+      nav('/login2');
+      return;
+    }
+
+    setLoadingNotes(true);
+    setError(null);
+
     axios({
-      method: "GET",
-      url: "http://localhost:3002/api/note/get",
-      // withCredentials: true,
+      method: 'get',
+      url: `${import.meta.env.VITE_API_URL}/api/note/get`,
+      withCredentials: true,
+      headers: { Authorization: `Bearer ${token}` }
     })
-      .then((res) => {
-        console.log("getNotes res", res.data);
-        setAllNotes(res.data.allNotes);
+      .then(res => {
+        setAllNotes(sortNotes(res.data.allNotes || []));
+        setLoadingNotes(false);
       })
-      .catch((error) => {
-        console.log("getNotes error", error.response ||error.message);
+      .catch(err => {
+        console.error('Error fetching notes:', err.message);
+        setError('Failed to load notes. Please try again.');
+        setLoadingNotes(false);
       });
   };
 
-
-
-  // useEffect(() => {
-  //   if (title || content) {
-  //     handleFetchNotes();
-  //   }
-  // }, [title, content]);
-
-
-
-  const updateNote = (noteId, updatedData) => {
-    
-    console.log("updatadData:", updatedData);
-
-      axios({
-      method: "put",
-      url: `http://localhost:3002/api/update/note/${noteId}`,
-      data: updatedData,
-      withCredentials: true,
-    })
-      .then((res) => {
-        console.log("update res", res.data);
-        setAllNotes((prevNotes) =>
-          prevNotes.map((note) =>
-            note._id === noteId ? { ...note, ...updatedData } : note
-          )
-        );
-        setEditingNote(null);
-        handleFetchNotes(updatedData);
-      })
-      .catch((err) => console.log("update err", err.response || err.message));
-
-    console.log("fetched updated notes", updatedData);
-  };
-
-
+  useEffect(() => {
+    fetchNotes();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setUpdatedData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    setUpdatedData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleEditClick = (note) => {
+    setEditingNote(note._id);
+    setUpdatedData({ title: note.title, content: note.content });
+  };
 
-
-  // const startEditing = (note) => {
-  //   setEditingNote(note._id);
-  //   setUpdatedData({ title: note.title, content: note.content });
-  // };
-
-  // Handle canceling edit
-  // const handleCancelEdit = () => {
-  //     setEditingNote(null);
-  //     setUpdatedData({ title: '', content: '', tags: [] });
-  // };
-
-
-
-  const deleteNote = (noteId) => {
-  
-    console.log("del Hit!", noteId);
+  const updateNote = (noteId, data) => {
+    const token = getToken();
 
     axios({
-      method: "DELETE",
-      url: `http://localhost:3002/api/delete/note/${noteId}`,
+      method: 'put',
+      url: `${import.meta.env.VITE_API_URL}/api/update/note/${noteId}`,
+      data,
       withCredentials: true,
+      headers: { Authorization: `Bearer ${token}` }
     })
-      .then((res) => {
-        console.log("del res", res.data);
-        // setNotes(notes.filter(note => note.id !== note.id))
-        setAllNotes((prevNotes) =>
-          prevNotes.filter((item) => item._id !== noteId)
+      .then(res => {
+        setAllNotes(prev =>
+          sortNotes(prev.map(note =>
+            note._id === noteId ? { ...note, ...data } : note
+          ))
         );
-        handleFetchNotes();
+        setEditingNote(null);
       })
-      .catch((err) => {
-        console.log(" del err", err.response || err.message);
+      .catch(err => {
+        console.error('Error updating note:', err.message);
+        setError('Failed to update note.');
       });
   };
 
-  
-  
-  const handleEditClick = (note) => {
-    setEditingNote(note._id);
-    setUpdatedData({
-      title: note.title,
-      content: note.content,
-    });
+  const togglePin = (note) => {
+    const token = getToken();
+
+    axios({
+      method: 'put',
+      url: `${import.meta.env.VITE_API_URL}/api/update/note/${note._id}`,
+      data: { pinned: !note.pinned },
+      withCredentials: true,
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(() => {
+        setAllNotes(prev =>
+          sortNotes(prev.map(n =>
+            n._id === note._id ? { ...n, pinned: !n.pinned } : n
+          ))
+        );
+      })
+      .catch(err => {
+        console.error('Error toggling pin:', err.message);
+        setError('Failed to update pin status.');
+      });
+  };
+
+  const deleteNote = (noteId) => {
+    const token = getToken();
+
+    axios({
+      method: 'delete',
+      url: `${import.meta.env.VITE_API_URL}/api/delete/note/${noteId}`,
+      withCredentials: true,
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(() => {
+        setAllNotes(prev => prev.filter(item => item._id !== noteId));
+      })
+      .catch(err => {
+        console.error('Error deleting note:', err.message);
+        setError('Failed to delete note.');
+      });
   };
 
   const onDragEnd = (result) => {
+    if (isGrid) return;
+
     const { destination, source } = result;
     if (!destination) return;
-    const reorderedNotes = Array.from(allNotes);
-    const [movedNote] = reorderedNotes.splice(source.index, 1);
-    reorderedNotes.splice(destination.index, 0, movedNote);
 
-    setAllNotes(reorderedNotes);
+    const unpinned = allNotes.filter(n => !n.pinned);
+    const pinned = allNotes.filter(n => n.pinned);
+
+    const pinnedCount = pinned.length;
+    const adjustedSource = source.index - pinnedCount;
+    const adjustedDest = destination.index - pinnedCount;
+
+    if (adjustedSource < 0 || adjustedDest < 0) return;
+
+    const reordered = Array.from(unpinned);
+    const [moved] = reordered.splice(adjustedSource, 1);
+    reordered.splice(adjustedDest, 0, moved);
+
+    setAllNotes([...pinned, ...reordered]);
   };
 
-
-
-  {
-    /* {console.log('notes', notes)} */
-  }
-  {
-    /* {console.log('allNotes', allNotes)} */
-  }
-  {
-    /* {console.log('setAllNotes', setAllNotes)} */
-  }
-  {
-    /* {console.log('newNote:', newNote)} */
-  }
-  {
-    /* {console.log('title:')} */
-  }
-  {
-    /* {console.log('content:')} */
-  }
-
-
   return (
-    //     <div id='cLogs'>
-    // {console.log('updatedData:', updatedNote)}
-    // {console.log('allNotes:'. allNotes)}
-    // <console.log('notes:', notes)
-    //     </div>
-
-    <div id="getNotes">
-
-
-{/* B4 you ask yes i got the dragDropContext stuff from ChatGPT */}
-
-
-      {error && <div className="error-message">{error}</div>}
-
-      {/* <br /> */}
-      {/* <br /> */}
-
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="droppable">
-          {(provided) => (
-            <div
-              id="notesArray"
-              {...provided.droppableProps}
-              ref={provided.innerRef}
+    <FloatingElements className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
+      <main id="main-content" className="max-w-4xl mx-auto space-y-6">
+        <header className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">
+              <GradientText from="from-yellow-400" via="via-orange-400" to="to-amber-500">
+                <AnimatedText text="My Notes" animation="slideUp" />
+              </GradientText>
+            </h1>
+            <span
+              aria-label={`Current layout: ${layout}`}
+              title={`Layout: ${layout}`}
+              className="text-slate-400 text-sm font-medium uppercase tracking-wide select-none"
             >
-              {/* <br /> */}
-              {/* <br /> */}
+              {isGrid ? '⊞ Grid' : '☰ List'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/settings" aria-label="Change layout in settings">
+              <Button
+                variant="outline"
+                aria-label="Go to settings to change layout"
+                className="border-slate-500 text-slate-200 hover:bg-slate-700 h-10"
+                style={{ maxWidth: '16vw', minWidth: '90px', borderRadius: '12%' }}
+              >
+                Layout
+              </Button>
+            </Link>
+            <Link to="/notes">
+              <Button
+                aria-label="Create a new note"
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold h-11"
+                style={{ maxWidth: '16vw', minWidth: '120px', borderRadius: '12%' }}
+              >
+                + New Note
+              </Button>
+            </Link>
+          </div>
+        </header>
 
-            {/* And yes i got the Array.isArray from ChatGPT */}
-            <h1>📃 Notes 📃</h1>
+        {error && (
+          <div role="alert" aria-live="assertive" className="p-3 rounded-md bg-red-600 text-white text-sm font-medium">
+            {error}
+          </div>
+        )}
 
-              {Array.isArray(allNotes) && allNotes.length > 0 ? (
-                allNotes.map((note, index) => (
-                  <Draggable
-                    key={note._id}
-                    draggableId={note._id}
-                    index={index}
-                  >
-                    {(provided) => (
-                      <div
-                        className="note-card"
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
+        {loadingNotes ? (
+          <p className="text-slate-300 text-center py-12">Loading your notes...</p>
+        ) : (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="notes-droppable">
+              {(provided) => (
+                <section
+                  id="notes-array"
+                  aria-label={isGrid ? 'Notes grid' : 'Notes list'}
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className={
+                    isGrid
+                      ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+                      : 'flex flex-col gap-4'
+                  }
+                >
+                  {Array.isArray(allNotes) && allNotes.length > 0 ? (
+                    allNotes.map((note, index) => (
+                      <Draggable
+                        key={note._id}
+                        draggableId={note._id}
+                        index={index}
+                        isDragDisabled={isGrid || note.pinned}
                       >
-                        {editingNote === note._id ? (
-                         
-                         <div id="editing">
-                            <br />
-
-                            <input
-                              type="text"
-                              name="title"
-                              value={updatedData.title}
-                              placeholder="Update Name of Note"
-                              onChange={handleChange}
-                            />
-
-                            <br />
-                            <br />
-
-                            <textarea
-                              name="content"
-                              value={updatedData.content}
-                              placeholder="Update Note Information"
-                              onChange={handleChange}
-                            />
-
-                            <br />
-                            <br />
-
-                            <div className="btns">
-
-
-                            <button className="btnGrp1"
-                              onClick={() => updateNote(note._id, updatedData)} >
-                              Save Changes                       
+                        {(provided) => (
+                          <article
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            aria-label={`Note: ${note.title}`}
+                            className="rounded-xl shadow-md p-5 relative"
+                            style={{
+                              backgroundColor: note.color || '#ffd54f',
+                              color: '#1a1a1a',
+                              fontFamily: font
+                            }}
+                          >
+                            <button
+                              onClick={() => togglePin(note)}
+                              aria-label={note.pinned ? 'Unpin this note' : 'Pin this note'}
+                              aria-pressed={note.pinned}
+                              className="absolute top-3 right-3 text-xl bg-transparent border-none cursor-pointer opacity-70 hover:opacity-100 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-700 rounded"
+                            >
+                              {note.pinned ? '📌' : '📍'}
                             </button>
 
-                            <br />
-                            <br />
-
-                            <button className="btnGrp1" 
-                            onClick={() => setEditingNote(null)}>
-                              Cancel
-                            </button>
-
+                            {editingNote === note._id ? (
+                              <div className="space-y-3">
+                                <input
+                                  type="text"
+                                  name="title"
+                                  value={updatedData.title}
+                                  onChange={handleChange}
+                                  placeholder="Note title"
+                                  aria-label="Edit note title"
+                                  className="w-full rounded border border-slate-400 bg-white/80 px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-600"
+                                />
+                                <textarea
+                                  name="content"
+                                  value={updatedData.content}
+                                  onChange={handleChange}
+                                  placeholder="Note content"
+                                  rows={4}
+                                  aria-label="Edit note content"
+                                  className="w-full rounded border border-slate-400 bg-white/80 px-3 py-2 text-slate-800 resize-y focus:outline-none focus:ring-2 focus:ring-slate-600"
+                                />
+                                <div className="flex gap-3 flex-wrap">
+                                  <Button
+                                    onClick={() => updateNote(note._id, updatedData)}
+                                    aria-label="Save changes to this note"
+                                    className="bg-slate-800 text-white hover:bg-slate-700 h-10"
+                                    style={{ maxWidth: '16vw', minWidth: '110px', borderRadius: '12%' }}
+                                  >
+                                    Save Changes
+                                  </Button>
+                                  <Button
+                                    onClick={() => setEditingNote(null)}
+                                    aria-label="Cancel editing this note"
+                                    variant="outline"
+                                    className="border-slate-700 text-slate-800 hover:bg-slate-100 h-10"
+                                    style={{ maxWidth: '16vw', minWidth: '90px', borderRadius: '12%' }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
                               </div>
-                            <br />
-                            <br />
-
-                            <div>
-
-                            <button className="btnGrp2"
-                              onClick={() => handleFetchNotes()}
-                              id="editFetchBtn">
-
-                             🗒️📃 All Notes Again 😒🙄 
-                            </button>
-
-
-
-                            </div>
-
-
-                          </div>
-
-                        ) : (
-
-                          <div className="note-content">
-                           
-                           <br />
-                            <h3 id="titleDisplayed"> {note.title}</h3>
-
-                            <br />
-
-                            <p id="contentDisplayed">{note.content}</p>
-
-                         <div className="btn-group">
-                              <br />
-                              <br />
-
-                              <button
-                                id="editClick"
-                                onClick={() => handleEditClick(note)} >
-                                Edit
-                              </button>
-
-                              <br />
-                              <br />
-
-                              <button
-                                id="delNote"
-                                onClick={() => deleteNote(note._id)}>
-                                Delete Note
-                              </button>
-
-                         </div>
-                              
-                              <br />
-                              <br />
-
-                              {/* <button 
-                                id="editFetch"
-                                onClick={() => handleFetchNotes()}>
-                                My Notes
-                              </button> */}
-
-                          </div>
+                            ) : (
+                              <div>
+                                <h2 className="text-xl font-bold mb-2 pr-8">{note.title}</h2>
+                                <p className="text-base leading-relaxed mb-4">{note.content}</p>
+                                <div className="flex gap-3 flex-wrap">
+                                  <Button
+                                    onClick={() => handleEditClick(note)}
+                                    aria-label={`Edit note: ${note.title}`}
+                                    className="bg-slate-800 text-white hover:bg-slate-700 h-10"
+                                    style={{ maxWidth: '16vw', minWidth: '80px', borderRadius: '12%' }}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    onClick={() => deleteNote(note._id)}
+                                    aria-label={`Delete note: ${note.title}`}
+                                    variant="outline"
+                                    className="border-red-600 text-red-700 hover:bg-red-50 h-10"
+                                    style={{ maxWidth: '16vw', minWidth: '90px', borderRadius: '12%' }}
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </article>
                         )}
-                      </div>
-                    )}
-                  </Draggable>
-                ))
-              )
-               : 
-              (
-                <div id="noNotesAvail">
-                  <br />
-                  <br />
-
-                  {/* <p>😒 No Notes Yet 😒 </p> */}
-                  <br />
-
-                  <button onClick={() => handleFetchNotes()} id="fetch">
-                    Go Fetch My Notes! 😁{" "}
-                  </button>
-                
-                </div>
-
-                )
-               }
-              {provided.placeholder}
-            </div>
-          )}
-
-          
-        </Droppable>
-      </DragDropContext>
-
-     </div>
+                      </Draggable>
+                    ))
+                  ) : (
+                    <div className="text-center py-16 space-y-4">
+                      <p className="text-slate-300 text-lg">No notes yet. Create your first note!</p>
+                      <Link to="/notes">
+                        <Button
+                          aria-label="Create your first note"
+                          className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold h-11"
+                          style={{ maxWidth: '16vw', minWidth: '140px', borderRadius: '12%' }}
+                        >
+                          Create Note
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                  {provided.placeholder}
+                </section>
+              )}
+            </Droppable>
+          </DragDropContext>
+        )}
+      </main>
+    </FloatingElements>
   );
 };
 
